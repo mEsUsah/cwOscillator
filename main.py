@@ -36,16 +36,39 @@ MOUSE_BUTTONS = {
 parser = argparse.ArgumentParser(description="CW Oscillator for morse code practice")
 parser.add_argument("--key", default="i", help="Key to use as the morse key (default: i). Use 'mouse-left' or 'mouse-right' for mouse buttons.")
 parser.add_argument("--freq", type=int, default=650, help="Tone frequency in Hz (default: 650)")
+parser.add_argument("--device", default=None, help="Output audio device name or index (partial name match supported)")
+parser.add_argument("--list-devices", action="store_true", help="List available output devices and exit")
 args = parser.parse_args()
+
+if args.list_devices:
+    devices = sd.query_devices()
+    print("Available output devices:")
+    for i, d in enumerate(devices):
+        if d["max_output_channels"] > 0:
+            print(f"  [{i}] {d['name']}")
+    raise SystemExit(0)
 
 FREQ = args.freq
 
+# Resolve device by partial name match if a string is given
+device = args.device
+if device is not None and not device.isdigit():
+    matches = [i for i, d in enumerate(sd.query_devices())
+               if device.lower() in d["name"].lower() and d["max_output_channels"] > 0]
+    if not matches:
+        print(f"No output device matching '{device}'. Run with --list-devices to see options.")
+        raise SystemExit(1)
+    device = matches[0]
+elif device is not None:
+    device = int(device)
+
 quit_key = "esc" if args.key in ("left ctrl", "right ctrl", "ctrl") else None
 quit_hint = f"[{quit_key}]" if quit_key else "Ctrl+C"
-print(f"CW Oscillator — Hold [{args.key}] to transmit at {FREQ} Hz. {quit_hint} to quit.")
+device_name = sd.query_devices(device)["name"] if device is not None else f"System Default ({sd.query_devices(sd.default.device['output'])['name']})"
+print(f"CW Oscillator — Hold [{args.key}] to transmit at {FREQ} Hz on [{device_name}]. {quit_hint} to quit.")
 
 with sd.OutputStream(samplerate=SAMPLE_RATE, channels=1, blocksize=BLOCKSIZE,
-                     latency="low", callback=_audio_callback):
+                     device=device, latency="low", callback=_audio_callback):
     if args.key in MOUSE_BUTTONS:
         target_button = MOUSE_BUTTONS[args.key]
 
