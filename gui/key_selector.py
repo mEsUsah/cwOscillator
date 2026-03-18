@@ -24,12 +24,12 @@ class KeySelectorDialog:
 
         self._key_var = tk.StringVar(value=current_key)
 
-        tk.Label(self._dialog, text="Selected key:", font=("Segoe UI", 9)).pack(padx=24, pady=(16, 4))
+        tk.Label(self._dialog, text="Selected key:", font="TkDefaultFont 10 bold").pack(padx=24, pady=(16, 4))
         tk.Label(self._dialog, textvariable=self._key_var,
-                 font=("Segoe UI", 13, "bold"), width=18).pack(padx=24)
+                 font="TkDefaultFont 10 bold", width=18).pack(padx=24)
 
         self._listen_btn = tk.Button(self._dialog, text="Detect key / mouse button",
-                                     command=self._start_listening, font=("Segoe UI", 9))
+                                     command=self._start_listening)
         self._listen_btn.pack(padx=24, pady=12)
 
         btn_frame = tk.Frame(self._dialog)

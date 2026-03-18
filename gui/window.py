@@ -24,38 +24,37 @@ class GUI:
         self._on_freq_change = on_freq_change
 
         # Frequency label
-        tk.Label(self._root, text="Frequency (Hz)", font=("Segoe UI", 9)).pack(padx=20, pady=(16, 0), anchor="w")
+        tk.Label(self._root, text="Frequency (Hz):", font="TkDefaultFont 10 bold").pack(padx=10, pady=(16, 0), anchor="w")
 
         # Slider + spinbox on the same row
         freq_row = tk.Frame(self._root)
-        freq_row.pack(padx=20, pady=(0, 8), fill="x")
+        freq_row.pack(padx=10, pady=(0, 8), fill="x")
         tk.Scale(freq_row, from_=200, to=1500, orient=tk.HORIZONTAL,
                  variable=self._freq_var, command=self._on_slider_change,
-                 length=220, showvalue=False, font=("Segoe UI", 9)).pack(side=tk.LEFT)
+                 length=220, showvalue=False).pack(side=tk.LEFT)
         spinbox = ttk.Spinbox(freq_row, from_=200, to=1500, increment=1,
                               textvariable=self._freq_entry_var, width=6,
-                              font=("Segoe UI", 9), justify="right",
-                              command=self._on_spinbox_step)
+                              justify="right", command=self._on_spinbox_step)
         spinbox.pack(side=tk.LEFT, padx=(6, 0))
         spinbox.bind("<KeyRelease>", self._on_entry_type)
         spinbox.bind("<FocusOut>", self._on_entry_confirm)
 
+        # Key selector
+        tk.Label(self._root, text="Input Key:", font="TkDefaultFont 10 bold").pack(padx=10, pady=(0, 0), anchor="w")
+        key_frame = tk.Frame(self._root, highlightbackground="#aaaaaa", highlightthickness=1)
+        key_frame.pack(padx=10, pady=(0, 8), fill="x")
+        tk.Label(key_frame, textvariable=self._key_var,
+                 width=14, anchor="w").pack(side=tk.LEFT, padx=6, pady=4)
+        tk.Button(key_frame, text="Change",
+                  command=self._open_key_selector).pack(side=tk.RIGHT, padx=6, pady=4)
+
         # Output device
         DeviceSelectorFrame(self._root, current_device,
-                            on_device_change).pack(padx=20, pady=(0, 8), fill="x")
-
-        # Key selector
-        key_frame = tk.Frame(self._root)
-        key_frame.pack(padx=20, pady=(0, 8))
-        tk.Label(key_frame, text="Key:", font=("Segoe UI", 9)).pack(side=tk.LEFT, padx=(0, 6))
-        tk.Label(key_frame, textvariable=self._key_var,
-                 font=("Segoe UI", 9, "bold"), width=14, anchor="w").pack(side=tk.LEFT)
-        tk.Button(key_frame, text="Change", font=("Segoe UI", 9),
-                  command=self._open_key_selector).pack(side=tk.LEFT, padx=(6, 0))
+                            on_device_change).pack(padx=10, pady=(0, 8), fill="x")
 
         # TX indicator
         tk.Label(self._root, textvariable=self._tx_var,
-                 font=("Segoe UI", 11, "bold"), fg="red", width=4).pack(pady=(0, 16))
+                 font="TkDefaultFont 10 bold", fg="red", width=4).pack(pady=(0, 16))
 
         if on_destroy:
             self._root.protocol("WM_DELETE_WINDOW", on_destroy)

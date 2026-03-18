@@ -13,9 +13,9 @@ class DeviceSelectorFrame(tk.Frame):
         self._on_device_change = on_device_change
         self._devices: list[tuple[int | None, str]] = []
 
-        tk.Label(self, text="Output Device", font=("Segoe UI", 9)).pack(anchor="w")
+        tk.Label(self, text="Output Device:", font="TkDefaultFont 10 bold").pack(anchor="w")
 
-        self._combo = ttk.Combobox(self, state="readonly", width=38, font=("Segoe UI", 9))
+        self._combo = ttk.Combobox(self, state="readonly", width=38)
         self._combo.pack(fill="x")
         self._combo.bind("<<ComboboxSelected>>", self._on_select)
 
