@@ -1,17 +1,19 @@
 import tkinter as tk
 from typing import Callable
 from .key_selector import KeySelectorDialog
+from .device_selector import DeviceSelectorFrame
 
 
 class GUI:
-    def __init__(self, freq: int, device_name: str, current_key: str,
+    def __init__(self, freq: int, current_device: int | None, current_key: str,
                  on_freq_change: Callable[[int], None],
                  on_key_change: Callable[[str], None],
+                 on_device_change: Callable[[int | None], None],
                  on_destroy: Callable[[], None] | None = None):
         self._on_key_change = on_key_change
 
         self._root = tk.Tk()
-        self._root.title(f"CW Oscillator — {device_name}")
+        self._root.title("CW Oscillator")
         self._root.resizable(False, False)
 
         self._freq_var = tk.IntVar(value=freq)
@@ -23,6 +25,10 @@ class GUI:
         tk.Scale(self._root, from_=200, to=1500, orient=tk.HORIZONTAL,
                  variable=self._freq_var, command=lambda val: on_freq_change(int(val)),
                  length=280, showvalue=True, font=("Segoe UI", 9)).pack(padx=20, pady=(0, 8))
+
+        # Output device
+        DeviceSelectorFrame(self._root, current_device,
+                            on_device_change).pack(padx=20, pady=(0, 8), fill="x")
 
         # Key selector
         key_frame = tk.Frame(self._root)

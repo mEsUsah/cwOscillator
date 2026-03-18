@@ -69,6 +69,24 @@ _gui: GUI | None = None
 _press_hook = None
 _release_hook = None
 _mouse_listener: pynput_mouse.Listener | None = None
+_stream: sd.OutputStream | None = None
+
+
+def start_stream(dev: int | None):
+    global _stream
+    set_playing(False)
+    if _stream:
+        _stream.stop()
+        _stream.close()
+    _stream = sd.OutputStream(samplerate=SAMPLE_RATE, channels=1, blocksize=BLOCKSIZE,
+                               device=dev, latency="low", callback=_audio_callback)
+    _stream.start()
+
+
+def on_device_change(dev: int | None):
+    global device
+    device = dev
+    start_stream(dev)
 
 
 def set_playing(val: bool):
@@ -115,14 +133,13 @@ def setup_input_hooks(key: str):
 
 # --- Run ---
 
-device_name = (sd.query_devices(device)["name"] if device is not None
-               else f"System Default ({sd.query_devices(sd.default.device['output'])['name']})")
-
 setup_input_hooks(args.key)
+start_stream(device)
 
-with sd.OutputStream(samplerate=SAMPLE_RATE, channels=1, blocksize=BLOCKSIZE,
-                     device=device, latency="low", callback=_audio_callback):
+try:
     if args.cli:
+        device_name = (sd.query_devices(device)["name"] if device is not None
+                       else f"System Default ({sd.query_devices(sd.default.device['output'])['name']})")
         quit_key = "esc" if args.key in ("left ctrl", "right ctrl", "ctrl") else None
         quit_hint = f"[{quit_key}]" if quit_key else "Ctrl+C"
         print(f"CW Oscillator — Hold [{args.key}] to transmit at {FREQ} Hz on [{device_name}]. {quit_hint} to quit.")
@@ -139,8 +156,13 @@ with sd.OutputStream(samplerate=SAMPLE_RATE, channels=1, blocksize=BLOCKSIZE,
             global FREQ
             FREQ = val
 
-        _gui = GUI(FREQ, device_name, current_key=args.key,
+        _gui = GUI(FREQ, current_device=device, current_key=args.key,
                    on_freq_change=on_freq_change,
-                   on_key_change=setup_input_hooks)
+                   on_key_change=setup_input_hooks,
+                   on_device_change=on_device_change)
 
         _gui.mainloop()
+finally:
+    if _stream:
+        _stream.stop()
+        _stream.close()
