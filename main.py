@@ -91,9 +91,9 @@ def on_device_change(dev: int | None):
 
 def set_playing(val: bool):
     global _playing
-    _playing = val
+    _playing = val  # immediate — audio callback reads this directly
     if _gui is not None:
-        _gui.set_tx(val)
+        _gui._root.after(0, lambda: _gui.set_tx(val))  # deferred to main thread
 
 
 def setup_input_hooks(key: str):
