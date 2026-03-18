@@ -3,7 +3,7 @@ import webbrowser
 import requests
 from tkinter import messagebox
 
-APP_VERSION = "v1.0.1"
+APP_VERSION = "v1.0.2"
 _RELEASES_URL = "https://api.github.com/repos/mEsUsah/cwOscillator/releases/latest"
 _HEADERS = {
     "Accept": "application/vnd.github+json",
