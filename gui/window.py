@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 from typing import Callable
 from .key_selector import KeySelectorDialog
 from .device_selector import DeviceSelectorFrame
@@ -17,14 +18,27 @@ class GUI:
         self._root.resizable(False, False)
 
         self._freq_var = tk.IntVar(value=freq)
+        self._freq_entry_var = tk.StringVar(value=str(freq))
         self._tx_var = tk.StringVar(value="")
         self._key_var = tk.StringVar(value=current_key)
+        self._on_freq_change = on_freq_change
 
-        # Frequency
-        tk.Label(self._root, text="Frequency (Hz)", font=("Segoe UI", 9)).pack(padx=20, pady=(16, 0))
-        tk.Scale(self._root, from_=200, to=1500, orient=tk.HORIZONTAL,
-                 variable=self._freq_var, command=lambda val: on_freq_change(int(val)),
-                 length=280, showvalue=True, font=("Segoe UI", 9)).pack(padx=20, pady=(0, 8))
+        # Frequency label
+        tk.Label(self._root, text="Frequency (Hz)", font=("Segoe UI", 9)).pack(padx=20, pady=(16, 0), anchor="w")
+
+        # Slider + spinbox on the same row
+        freq_row = tk.Frame(self._root)
+        freq_row.pack(padx=20, pady=(0, 8), fill="x")
+        tk.Scale(freq_row, from_=200, to=1500, orient=tk.HORIZONTAL,
+                 variable=self._freq_var, command=self._on_slider_change,
+                 length=220, showvalue=False, font=("Segoe UI", 9)).pack(side=tk.LEFT)
+        spinbox = ttk.Spinbox(freq_row, from_=200, to=1500, increment=1,
+                              textvariable=self._freq_entry_var, width=6,
+                              font=("Segoe UI", 9), justify="right",
+                              command=self._on_spinbox_step)
+        spinbox.pack(side=tk.LEFT, padx=(6, 0))
+        spinbox.bind("<KeyRelease>", self._on_entry_type)
+        spinbox.bind("<FocusOut>", self._on_entry_confirm)
 
         # Output device
         DeviceSelectorFrame(self._root, current_device,
@@ -45,6 +59,35 @@ class GUI:
 
         if on_destroy:
             self._root.protocol("WM_DELETE_WINDOW", on_destroy)
+
+    def _on_slider_change(self, val):
+        self._freq_entry_var.set(val)
+        self._on_freq_change(int(val))
+
+    def _on_spinbox_step(self):
+        try:
+            val = max(200, min(1500, int(self._freq_entry_var.get())))
+            self._freq_var.set(val)
+            self._on_freq_change(val)
+        except ValueError:
+            pass
+
+    def _on_entry_type(self, _event):
+        try:
+            val = max(200, min(1500, int(self._freq_entry_var.get())))
+            self._freq_var.set(val)
+            self._on_freq_change(val)
+        except ValueError:
+            pass  # ignore incomplete input while typing
+
+    def _on_entry_confirm(self, _event):
+        try:
+            val = max(200, min(1500, int(self._freq_entry_var.get())))
+        except ValueError:
+            val = self._freq_var.get()
+        self._freq_var.set(val)
+        self._freq_entry_var.set(str(val))
+        self._on_freq_change(val)
 
     def _open_key_selector(self):
         KeySelectorDialog(self._root, self._key_var.get(), self._on_key_selected)
