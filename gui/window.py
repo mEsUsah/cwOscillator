@@ -3,6 +3,7 @@ from tkinter import ttk
 from typing import Callable
 from .key_selector import KeySelectorDialog
 from .device_selector import DeviceSelectorFrame
+from utils import APP_VERSION, check_updates
 
 
 class GUI:
@@ -56,8 +57,16 @@ class GUI:
         tk.Label(self._root, textvariable=self._tx_var,
                  font="TkDefaultFont 10 bold", fg="red", width=4).pack(pady=(0, 16))
 
+        # Credits and version
+        bottom_frame = ttk.Frame(self._root)
+        bottom_frame.pack(side="bottom", fill="x")
+        ttk.Label(bottom_frame, text="Created by Stanley Skarshaug - www.haxor.no").pack(side="left", padx=10, pady=10)
+        ttk.Label(bottom_frame, text=APP_VERSION).pack(side="right", padx=10, pady=10)
+
         if on_destroy:
             self._root.protocol("WM_DELETE_WINDOW", on_destroy)
+
+        self._root.after(500, check_updates)
 
     def _on_slider_change(self, val):
         self._freq_entry_var.set(val)
