@@ -3,7 +3,7 @@ from tkinter import ttk
 from typing import Callable
 from .key_selector import KeySelectorDialog
 from .device_selector import DeviceSelectorFrame
-from utils import APP_VERSION, check_updates
+from utils import APP_VERSION, check_updates, resource_path, set_icon
 
 
 class GUI:
@@ -15,6 +15,7 @@ class GUI:
         self._on_key_change = on_key_change
 
         self._root = tk.Tk()
+        self._root.withdraw()
         self._root.title("CW Oscillator")
         self._root.resizable(False, False)
 
@@ -66,6 +67,8 @@ class GUI:
         if on_destroy:
             self._root.protocol("WM_DELETE_WINDOW", on_destroy)
 
+        set_icon(self._root, resource_path("logo.ico"))
+        self._root.deiconify()
         self._root.after(500, check_updates)
 
     def _on_slider_change(self, val):
