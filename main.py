@@ -3,6 +3,7 @@ import numpy as np
 import sounddevice as sd
 import keyboard
 from pynput import mouse as pynput_mouse
+from gui import GUI
 
 SAMPLE_RATE = 44100
 BLOCKSIZE = 256
@@ -12,6 +13,7 @@ _playing = False
 _phase = 0
 _amplitude = 0.0
 _ramp_rate = 1.0 / (SAMPLE_RATE * RAMP_MS / 1000)
+FREQ = 650
 
 
 def _audio_callback(outdata, frames, time, status):
@@ -38,6 +40,7 @@ parser.add_argument("--key", default="i", help="Key to use as the morse key (def
 parser.add_argument("--freq", type=int, default=650, help="Tone frequency in Hz (default: 650)")
 parser.add_argument("--device", default=None, help="Output audio device name or index (partial name match supported)")
 parser.add_argument("--list-devices", action="store_true", help="List available output devices and exit")
+parser.add_argument("--cli", action="store_true", help="Run without GUI")
 args = parser.parse_args()
 
 if args.list_devices:
@@ -50,7 +53,6 @@ if args.list_devices:
 
 FREQ = args.freq
 
-# Resolve device by partial name match if a string is given
 device = args.device
 if device is not None and not device.isdigit():
     matches = [i for i, d in enumerate(sd.query_devices())
@@ -62,31 +64,58 @@ if device is not None and not device.isdigit():
 elif device is not None:
     device = int(device)
 
+_gui: GUI | None = None
+
+
+def set_playing(val: bool):
+    global _playing
+    _playing = val
+    if _gui is not None:
+        _gui.set_tx(val)
+
+
+# --- Input hooks ---
+
 quit_key = "esc" if args.key in ("left ctrl", "right ctrl", "ctrl") else None
-quit_hint = f"[{quit_key}]" if quit_key else "Ctrl+C"
+
+if args.key in MOUSE_BUTTONS:
+    target_button = MOUSE_BUTTONS[args.key]
+
+    def on_click(_x, _y, button, pressed):
+        if button == target_button:
+            set_playing(pressed)
+
+    listener = pynput_mouse.Listener(on_click=on_click, suppress=True)
+    listener.start()
+else:
+    keyboard.on_press_key(args.key, lambda _: set_playing(True), suppress=True)
+    keyboard.on_release_key(args.key, lambda _: set_playing(False), suppress=True)
+
+# --- Run ---
+
 device_name = sd.query_devices(device)["name"] if device is not None else f"System Default ({sd.query_devices(sd.default.device['output'])['name']})"
-print(f"CW Oscillator — Hold [{args.key}] to transmit at {FREQ} Hz on [{device_name}]. {quit_hint} to quit.")
 
 with sd.OutputStream(samplerate=SAMPLE_RATE, channels=1, blocksize=BLOCKSIZE,
                      device=device, latency="low", callback=_audio_callback):
-    if args.key in MOUSE_BUTTONS:
-        target_button = MOUSE_BUTTONS[args.key]
-
-        def on_click(x, y, button, pressed):
-            if button == target_button:
-                globals().update(_playing=pressed)
-
-        listener = pynput_mouse.Listener(on_click=on_click, suppress=True)
-        listener.start()
+    if args.cli:
+        quit_hint = f"[{quit_key}]" if quit_key else "Ctrl+C"
+        print(f"CW Oscillator — Hold [{args.key}] to transmit at {FREQ} Hz on [{device_name}]. {quit_hint} to quit.")
+        try:
+            if quit_key:
+                keyboard.wait(quit_key)
+            else:
+                keyboard.wait()
+        except KeyboardInterrupt:
+            pass
+        print("\nQuit.")
     else:
-        keyboard.on_press_key(args.key, lambda _: globals().update(_playing=True), suppress=True)
-        keyboard.on_release_key(args.key, lambda _: globals().update(_playing=False), suppress=True)
+        def on_freq_change(val: int):
+            global FREQ
+            FREQ = val
 
-    try:
+        _gui = GUI(FREQ, device_name, on_freq_change=on_freq_change)
+
         if quit_key:
-            keyboard.wait(quit_key)
-        else:
-            keyboard.wait()
-    except KeyboardInterrupt:
-        pass
-    print("\nQuit.")
+            keyboard.add_hotkey(quit_key, _gui.destroy)
+
+        _gui.mainloop()
