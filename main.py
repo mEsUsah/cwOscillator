@@ -127,8 +127,8 @@ def setup_input_hooks(key: str):
         _mouse_listener = pynput_mouse.Listener(on_click=on_click, suppress=False)
         _mouse_listener.start()
     else:
-        _press_hook = keyboard.on_press_key(key, lambda _: set_playing(True), suppress=True)
-        _release_hook = keyboard.on_release_key(key, lambda _: set_playing(False), suppress=True)
+        _press_hook = keyboard.on_press_key(key, lambda _: set_playing(True), suppress=False)
+        _release_hook = keyboard.on_release_key(key, lambda _: set_playing(False), suppress=False)
 
 
 # --- Run ---
