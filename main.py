@@ -6,8 +6,8 @@ from pynput import mouse as pynput_mouse
 from gui import GUI
 
 SAMPLE_RATE = 44100
-BLOCKSIZE = 256
-RAMP_MS = 4  # attack/release time in milliseconds
+BLOCKSIZE = 64
+RAMP_MS = 1  # attack/release time in milliseconds
 
 _playing = False
 _phase = 0
@@ -78,9 +78,23 @@ def start_stream(dev: int | None):
     if _stream:
         _stream.stop()
         _stream.close()
-    _stream = sd.OutputStream(samplerate=SAMPLE_RATE, channels=1, blocksize=BLOCKSIZE,
-                               device=dev, latency="low", callback=_audio_callback)
-    _stream.start()
+    # Try WASAPI exclusive mode (bypasses Windows mixer, lowest latency)
+    extra = None
+    try:
+        extra = sd.WasapiSettings(exclusive=True)
+    except (AttributeError, sd.PortAudioError):
+        pass
+
+    try:
+        _stream = sd.OutputStream(samplerate=SAMPLE_RATE, channels=1, blocksize=BLOCKSIZE,
+                                   device=dev, latency="low", callback=_audio_callback,
+                                   extra_settings=extra)
+        _stream.start()
+    except sd.PortAudioError:
+        # Fallback: shared mode
+        _stream = sd.OutputStream(samplerate=SAMPLE_RATE, channels=1, blocksize=BLOCKSIZE,
+                                   device=dev, latency="low", callback=_audio_callback)
+        _stream.start()
 
 
 def on_device_change(dev: int | None):
